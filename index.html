@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyContacts</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
+        input { padding: 5px; margin: 5px; }
+        button { padding: 7px 15px; cursor: pointer; }
+        ul { list-style-type: none; padding: 0; }
+        li { padding: 10px; border-bottom: 1px solid #ccc; }
+        .delete-btn { color: red; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <h1>MyContacts</h1>
+
+    <!-- Contact Form -->
+    <input type="text" id="name" placeholder="Name">
+    <input type="email" id="email" placeholder="Email">
+    <input type="text" id="phone" placeholder="Phone">
+    <button onclick="addContact()">Add Contact</button>
+
+    <h2>Contact List</h2>
+    <ul id="contactList"></ul>
+
+    <script>
+        const API_URL = "http://localhost:5001/api/contacts"; // Change if needed
+        const token = localStorage.getItem("token"); // Assuming token is stored after login
+
+        // Fetch contacts from backend
+        async function fetchContacts() {
+            try {
+                const response = await fetch(API_URL, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const contacts = await response.json();
+                displayContacts(contacts);
+            } catch (error) {
+                console.error("Error fetching contacts:", error);
+            }
+        }
+
+        // Display contacts in the list
+        function displayContacts(contacts) {
+            const list = document.getElementById("contactList");
+            list.innerHTML = "";
+            contacts.forEach(contact => {
+                const li = document.createElement("li");
+                li.innerHTML = `${contact.name} - ${contact.email} - ${contact.phone} 
+                <span class="delete-btn" onclick="deleteContact('${contact._id}')">❌</span>`;
+                list.appendChild(li);
+            });
+        }
+
+        // Add a new contact
+        async function addContact() {
+            const name = document.getElementById("name").value;
+            const email = document.getElementById("email").value;
+            const phone = document.getElementById("phone").value;
+
+            if (!name || !email || !phone) {
+                alert("Please enter all fields");
+                return;
+            }
+
+            const contact = { name, email, phone };
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify(contact)
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to add contact");
+                }
+
+                document.getElementById("name").value = "";
+                document.getElementById("email").value = "";
+                document.getElementById("phone").value = "";
+                fetchContacts();
+            } catch (error) {
+                console.error("Error adding contact:", error);
+            }
+        }
+
+        // Delete a contact
+        async function deleteContact(id) {
+            try {
+                const response = await fetch(`${API_URL}/${id}`, {
+                    method: "DELETE",
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to delete contact");
+                }
+
+                fetchContacts();
+            } catch (error) {
+                console.error("Error deleting contact:", error);
+            }
+        }
+
+        // Fetch contacts when the page loads
+        fetchContacts();
+    </script>
+
+</body>
+</html>
